@@ -1,0 +1,264 @@
+﻿@model GameShow.Models.GamesDTO
+@using PagedList.Mvc;
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@{
+    if (!String.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissable">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
+            <strong>Error!</strong> @Model.ErrorMessage
+        </div>
+    }
+}
+
+<h3>Lista studentów</h3>
+
+
+@using (Html.BeginForm("Index", "Games", FormMethod.Get))
+{
+    <div class="container-fluid col-lg-12" style="margin-top:15px">
+        <div class="row-fluid">
+            <div class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
+                <div class="short-div div-filtry">
+                    @Html.Label("Nazwa", htmlAttributes: new { @class = "control-label labelka" })
+                    @Html.TextBox("gamenameFilter", Model.GameNameFilter, new { @class = " input-sm filter-input filter kontrolka", @id = "filter-gamename" })
+                </div>
+                <div class="short-div div-filtry">
+                    @Html.Label("Style", htmlAttributes: new { @class = "control-label labelka" })
+                    @Html.DropDownList("genresFilter", Model.Genres, htmlAttributes: new { @class = "-sm filter-input filter kontrolka", @id = "filter-genre", @onchange = "onFilterGenreChange(this.value)", multiple = "multiple" })
+                </div>
+            </div>
+            <button type="submit" id="btnFilterClear" name="request" value="Clear" onclick="clearFilter()" class="btn btn-primary col-lg-3 col-md-3 col-sm-3 col-xs-3 przycisk">Wyczyść</button>
+            <button type="submit" value="Filter" name="request" class="btn btn-primary col-lg-3 col-md-3 col-sm-3 col-xs-3 przycisk">Filtruj</button>
+            <div class="col-lg-1"></div>
+        </div>
+    </div>
+}
+
+<table class="table table-bordered table-hover col-md-12">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedGame.GameName)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedGame.GenreList)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedGame.Publisher)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedGame.PublishDate)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedGame.Country)
+        </th>
+        <th>
+            Komentarze
+        </th>
+    </tr>
+
+    @foreach (var game in Model.PagedGames)
+    {
+        <tr id="@("game" + game.IDGame)" onclick="editGame(@game.IDGame)">
+            <td class="game-name">
+                @Html.DisplayFor(modelItem => game.GameName)
+            </td>
+            <td class="game-genres">
+                @String.Join(", ", (game.GenreList.Select(p => p.GenreName).ToArray()).OrderBy(str => str))
+                @*@if (game.GenreList.Count > 0)
+                    {
+                        foreach (var genre in game.GenreList)
+                        {
+                            <dd>
+                                @Html.DisplayFor(model => genre.GenreName)
+                            </dd>
+                        }
+                    }
+                    else
+                    {
+                        <dd class="text-warning">Nie przyznano tej grze żadnego gatunku.</dd>
+                    }*@
+            </td>
+            <td class="game-publisher">
+                @Html.DisplayFor(modelItem => game.Publisher)
+            </td>
+            <td class="game-publish-date">
+                @Html.DisplayFor(modelItem => game.PublishDate)
+            </td>
+            <td class="game-country">
+                @Html.DisplayFor(modelItem => game.Country)
+            </td>
+            <td class="game-comments">
+                @Html.ActionLink(game.GameName, "Comments", new { id = game.IDGame })
+            </td>
+            @Html.HiddenFor(modelItem => game.Stamp, new { @class = "game-stamp" })
+            @Html.HiddenFor(modelItem => game.GenreList.Count, new { @class = "game-genrelist-count" })
+            @{int i = 0;}
+            @foreach (var genre in game.GenreList)
+            {
+                @Html.HiddenFor(modelItem => genre.IDGenre, new { @class = ("game-genrelist-" + i++) })
+            }
+        </tr>
+                }
+
+</table>
+Page @(Model.PagedGames.PageCount < Model.PagedGames.PageNumber ? 0 : Model.PagedGames.PageNumber) of @Model.PagedGames.PageCount
+
+@Html.PagedListPager(Model.PagedGames, page => Url.Action("Index", new { page }))
+
+
+
+@using (Html.BeginForm("GameForms", "Games"))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <h4>Gra</h4>
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedGame.GameName, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.EditorFor(model => model.SelectedGame.GameName, new { htmlAttributes = new { @class = "form-control kontrolka-dolna", @id = "form-game-name", @onchange = "unlockCreateButton()" } })
+                @Html.ValidationMessageFor(model => model.SelectedGame.GameName, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedGame.GenreList, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.DropDownList("formGenres", Model.Genres, htmlAttributes: new { @class = "form-control kontrolka-dolna", @id = "form-game-genres", @onchange = "onGenreChange(this.value)", multiple = "multiple" })
+                @*@Html.EditorFor(model => model.SelectedGame.GameName, new { htmlAttributes = new {@class = "form-control kontrolka-dolna", @id = "form-game-genres" } })*@
+                @*@Html.DropDownList("formGroup", Model.Groups, "(GRUPA)", htmlAttributes: new { @class = "form-control kontrolka-dolna", @id = "form-groupname", @onchange = "onFormGroupChange(this.value)" })*@
+                @Html.ValidationMessageFor(model => model.SelectedGame.GenreList, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedGame.Publisher, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.EditorFor(model => model.SelectedGame.Publisher, new { htmlAttributes = new { @class = "form-control kontrolka-dolna", @id = "form-game-publisher" } })
+                @Html.ValidationMessageFor(model => model.SelectedGame.Publisher, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedGame.PublishDate, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.EditorFor(model => model.SelectedGame.PublishDate, new { htmlAttributes = new { @class = "form-control kontrolka-dolna", @id = "form-game-publish-date", @placeholder = "YYYY-MM-DD ← Poprawny format daty" } })
+                @Html.ValidationMessageFor(model => model.SelectedGame.PublishDate, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedGame.Country, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.EditorFor(model => model.SelectedGame.Country, new { htmlAttributes = new { @class = "form-control kontrolka-dolna", @id = "form-game-country" } })
+                @Html.ValidationMessageFor(model => model.SelectedGame.Country, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        @Html.HiddenFor(model => model.SelectedGame.IDGame, new { @id = "form-game-id" })
+        @Html.HiddenFor(model => model.SelectedGame.Stamp, new { @id = "form-game-stamp" })
+        @*@Html.HiddenFor(model => model.Page)*@
+
+        <div class="form-group">
+            <div class="col-md-8">
+                <div class="pull-right">
+                    <button type="submit" name="request" id="createGame" value="Create" class="btn btn-primary przycisk-dolny">Nowy</button>
+                    <button type="submit" name="request" id="editGame" value="Edit" class="btn btn-primary przycisk-dolny" disabled>Zapisz</button>
+                    <button type="submit" name="request" id="deleteGame" value="Delete" class="btn btn-primary przycisk-dolny" disabled>Usuń</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(function () {
+            $('#formGenres').change(function (e) {
+                var selected = $(e.target).val();
+                console.dir(selected);
+                unlockCreateButton();
+            });
+        });
+
+        $("#form-game-name").on('change keydown paste input', function () {
+            unlockCreateButton();
+        });
+
+
+        function onGenreChange(value) {
+            unlockCreateButton();
+        }
+
+        function unlockCreateButton() {
+            console.log("unlockCreateButton");
+            document.getElementById("createGame").disabled = false;
+        }
+
+        function onFilterGroupChange(currId) {
+            $("#form-groupid").val(currId);
+        }
+
+        function editGame(rowId) {
+            var print = $("#game" + rowId);
+            var genreLength = print.find(".game-genrelist-count").val();
+            console.log(genreLength);
+
+            var selectedGenres = "";
+            for (var i = 0; i < genreLength; i++) {
+                selectedGenres += print.find(".game-genrelist-" + i).val() + ",";
+            }
+            var selectedGenresArray = selectedGenres.split(",");
+            selectedGenresArray.pop();
+            console.log(selectedGenresArray);
+
+            $("#form-game-genres").val(selectedGenresArray);
+
+
+            $("#form-game-name").val(print.find(".game-name").text().trim());
+            $("#form-game-publisher").val(print.find(".game-publisher").text().trim());
+            $("#form-game-publish-date").val(print.find(".game-publish-date").text().trim());
+            $("#form-game-country").val(print.find(".game-country").text().trim());
+            $("#form-game-id").val(rowId);
+            $("#form-game-stamp").val(print.find(".game-stamp").val());
+
+            document.getElementById("editGame").disabled = false;
+            document.getElementById("deleteGame").disabled = false;
+            document.getElementById("createGame").disabled = true;
+
+
+        }
+
+        $.validator.addMethod('date', function (value, element) {
+            if (this.optional(element))
+                return true;
+
+            var ok = true;
+            var regEx = /^\d{4}-\d{2}-\d{2}$/;
+            if (!value.match(regEx))
+                return false;  // Invalid format
+            var d;
+            if (!((d = new Date(value)) | 0))
+                return false; // Invalid date (or this could be epoch)
+            return d.toISOString().slice(0, 10) == value;
+        });
+
+        function clearFilter() {
+            $("#filter-gamename").val("");
+            $("#filter-genre").val("");
+
+        };
+    </script>
+}

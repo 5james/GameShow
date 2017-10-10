@@ -1,0 +1,37 @@
+﻿.option-button {
+    height:100%;
+}
+
+.div-filtry {
+    margin:3px; 
+    margin-left:5%
+
+}
+
+.labelka {
+    width:15%;
+}
+
+.kontrolka {
+    width:84%;
+    max-width:none;
+}
+
+.przycisk {
+    margin: 3px;
+    height: 100px;
+    max-height: none;
+}
+
+.kontrolka-dolna {
+    width:100%;
+    max-width:none;
+}
+
+.przycisk-dolny {
+
+}
+
+.media-object {
+    height: 100px;
+}

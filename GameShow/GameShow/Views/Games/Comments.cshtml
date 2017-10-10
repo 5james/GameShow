@@ -1,0 +1,153 @@
+﻿@model GameShow.Models.CommentsDTO
+
+@Styles.Render("~/Content/comments.css")
+
+@{
+    ViewBag.Title = "Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    Model.SelectedComment = new GameShow.Models.Comment();
+    Model.SelectedComment.CommentedGameRefID = Model.CommentedGame.IDGame;
+}
+<p>
+    @Html.ActionLink("Wróc do listy", "Index")
+</p>
+<center><h1>@Html.DisplayFor(model => model.CommentedGame.GameName)</h1></center>
+
+
+@{
+    if (!String.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissable">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
+            <strong>Error!</strong> Powód: @Model.ErrorMessage
+        </div>
+    }
+}
+
+@using (Html.BeginForm("CommentForms", "Comments"))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <h4>Dodaj komentarz</h4>
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedComment.Nickname, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.EditorFor(model => model.SelectedComment.Nickname, new { htmlAttributes = new { @class = "form-control kontrolka-dolna", @id = "commentbox-nickname" } })
+                @Html.ValidationMessageFor(model => model.SelectedComment.Nickname, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedComment.Email, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.EditorFor(model => model.SelectedComment.Email, new { htmlAttributes = new { @class = "form-control kontrolka-dolna", @id = "commentbox-email" } })
+                @Html.ValidationMessageFor(model => model.SelectedComment.Email, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.SelectedComment.CommentContent, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-6">
+                @Html.EditorFor(model => model.SelectedComment.CommentContent, new { htmlAttributes = new { @class = "form-control kontrolka-dolna", @id = "commentbox-content" } })
+                @Html.ValidationMessageFor(model => model.SelectedComment.CommentContent, "", new { @class = "text-danger" })
+            </div>
+        </div>
+        @Html.HiddenFor(model => model.SelectedComment.IDComment, new { @id = "commentbox-id" })
+        @Html.HiddenFor(model => model.SelectedComment.Stamp, new { @id = "commentbox-stamp" })
+        @Html.HiddenFor(model => model.SelectedComment.CommentedGameRefID, null)
+        <div class="form-group">
+            <div class="col-md-8 col-md-offset-2">
+                <button type="submit" name="request" id="createComment" value="Create" class="btn btn-primary przycisk-dolny">Dodaj</button>
+                <button type="submit" name="request" id="editComment" value="Edit" class="btn btn-primary przycisk-dolny" disabled>Zapisz</button>
+                <button type="submit" name="request" id="deleteComment" value="Delete" class="btn btn-primary przycisk-dolny" disabled>Usuń</button>
+            </div>
+        </div>
+    </div>
+}
+
+<h4>Komentarze</h4>
+<hr />
+
+<table class="table table-bordered table-hover col-md-12">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedComment.Nickname)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedComment.Email)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedComment.PublishDate)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SelectedComment.CommentContent)
+        </th>
+        <th></th>
+    </tr>
+
+
+        @if (Model.CommentedGame.CommentsList != null)
+        {
+            foreach (var item in Model.CommentedGame.CommentsList)
+            {
+                <tr id="@("comment" + item.IDComment)">
+                    <td class="comment-nickname">
+                        @Html.DisplayFor(modelItem => item.Nickname)
+                    </td>
+                    <td class="comment-email">
+                        @Html.DisplayFor(modelItem => item.Email)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.PublishDate)
+                    </td>
+                    <td class="comment-content">
+                        @Html.DisplayFor(modelItem => item.CommentContent)
+                    </td>
+                    <td>
+                        <a onclick="feditComment(@item.IDComment)">Edytuj</a> |
+                        <a onclick="postDelete(@item.IDComment, @Model.CommentedGame.IDGame)">Usuń</a>
+                        @*@Html.ActionLink("Usuń", "Delete", "Comments", new { id = item.IDComment, gameId = Model.CommentedGame.IDGame }, null)*@
+
+                    </td>
+                    @*@Html.HiddenFor(modelItem => item.IDComment, new { @id = "comment-id" })*@
+                    @Html.HiddenFor(modelItem => item.Stamp, new { @class = "comment-stamp" })
+                </tr>
+            }
+        }
+
+
+</table>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        function feditComment(rowId) {
+            var print = $("#comment" + rowId);
+            $("#commentbox-nickname").val(print.find(".comment-nickname").text().trim());
+            $("#commentbox-email").val(print.find(".comment-email").text().trim());
+            $("#commentbox-content").val(print.find(".comment-content").text().trim());
+            $("#commentbox-id").val(rowId);
+            $("#commentbox-stamp").val(print.find(".comment-stamp").val());
+
+            console.log(print.find(".comment-stamp").val());
+
+
+            document.getElementById("commentbox-nickname").readOnly = true;
+            document.getElementById("commentbox-email").readOnly = true;
+            document.getElementById("editComment").disabled = false;
+            document.getElementById("deleteComment").disabled = false;
+        }
+
+        function postDelete(CommentID, GameID) {
+            console.log("delete");
+            feditComment(CommentID);
+            document.getElementById("commentbox-content").readOnly = true;
+            $("#deleteComment").trigger("click");
+            document.getElementById("deleteComment").click();
+        }
+
+    </script>
+}
